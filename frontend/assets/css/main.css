@@ -1,0 +1,16 @@
+.charts-container {
+    display: flex;
+}
+
+.line-chart {
+    height: 300px;
+    width: 300px;
+    padding: 60px;
+}
+
+
+.bar-chart {
+    height: 300px;
+    width: 300px;
+    padding: 60px;
+}

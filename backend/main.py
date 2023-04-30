@@ -1,5 +1,5 @@
-import datetime
 from flask import Flask
+from flask_cors import CORS
 
 from business_logic.data_processing_program import DataProcessingProgram
 from plugins.input.test_data_input_plugin import TestDataInputPlugin as InputPlugin
@@ -9,6 +9,7 @@ from plugins.output.sample_rest_output_plugin import SampleOutputPlugin
 from plugins.output.responsibility_group_output_plugin import ResponsibilityGroupOutputPlugin
 
 flask_app = Flask(__name__)
+CORS(flask_app)
 
 
 

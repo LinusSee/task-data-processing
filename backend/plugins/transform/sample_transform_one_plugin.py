@@ -7,4 +7,9 @@ class SampleTransformOnePlugin(ApiModels.TransformPlugin):
 
     def transform(self, data: list[ApiModels.ProcessedTask]):
         print("PluginOne", data)
-        return (self.target_id, data)
+        returnData = [ { 'label': "Gruppe 1", 'count': 39 }
+                     , { 'label': "Gruppe 2", 'count': 244 }
+                     , { 'label': "Gruppe 4", 'count': 3109 }
+                     , { 'label': "Gruppe 5", 'count': 1720 }
+                    ]
+        return (self.target_id, returnData)

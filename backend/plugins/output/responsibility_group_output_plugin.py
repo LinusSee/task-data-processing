@@ -5,7 +5,7 @@ from flask import request
 
 
 class ResponsibilityGroupOutputPlugin(ApiModels.OutputPlugin):
-    '''Publishes the amout of tasks in a responsibility-group per time.
+    '''Publishes the amout of tasks in a responsibility-group at a given day.
     '''
     def __init__(self, target_id):
         self.target_id = target_id
@@ -20,5 +20,5 @@ class ResponsibilityGroupOutputPlugin(ApiModels.OutputPlugin):
 
     def __rest_resource(self):
         print('Url is: ', request.query_string)
-        # return self.output_data
-        return 'Hello there!'
+        return { 'countPerGroupName': self.output_data }
+        # return 'Hello there!'
