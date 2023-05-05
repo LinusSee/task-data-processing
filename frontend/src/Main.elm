@@ -4,7 +4,7 @@ import Browser
 import Browser.Navigation as Nav
 import Chart as C
 import Chart.Attributes as CA
-import Html exposing (Html, a, div, li, nav, text, ul)
+import Html exposing (Html, a, div, h2, li, nav, text, ul)
 import Html.Attributes exposing (..)
 import Http
 import Json.Decode as Decode exposing (Decoder, field, float, string)
@@ -136,10 +136,15 @@ viewHeader =
 
 viewCharts : Model -> Html.Html Msg
 viewCharts model =
-    div [ class "charts-container" ]
-        [ viewLabeledBarChart model.responsibilityGroupCount
-        , viewLineChart [ { x = 0, y = 1, z = 2 }, { x = 5, y = 4, z = 6 } ]
-        , viewLabeledBarChart barSampleData
+    div []
+        [ viewResponsibilities model
+        , div []
+            [ h2 []
+                [ text "Test charts" ]
+            , div [ class "charts-container" ]
+                [ viewLineChart [ { x = 0, y = 1, z = 2 }, { x = 5, y = 4, z = 6 } ]
+                ]
+            ]
         ]
 
 
@@ -161,12 +166,23 @@ viewLineChart data =
         ]
 
 
+viewResponsibilities : Model -> Html.Html Msg
+viewResponsibilities model =
+    div []
+        [ h2 []
+            [ text "Responsibilities" ]
+        , div
+            [ class "charts-container" ]
+            [ viewLabeledBarChart model.responsibilityGroupCount ]
+        ]
+
+
 viewLabeledBarChart : List { label : String, count : Float } -> Html.Html Msg
 viewLabeledBarChart data =
     div [ class "bar-chart" ]
         [ C.chart
             [ CA.height 300
-            , CA.width 300
+            , CA.width 600
             ]
             [ C.yLabels [ CA.withGrid ]
             , C.binLabels .label [ CA.moveDown 24 ]
@@ -174,6 +190,7 @@ viewLabeledBarChart data =
                 []
                 [ C.bar .count [] ]
                 data
+            , C.barLabels [ CA.moveDown 24, CA.color "white" ]
             ]
         ]
 

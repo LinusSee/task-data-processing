@@ -6,6 +6,10 @@ from flask import request
 
 class ResponsibilityGroupOutputPlugin(ApiModels.OutputPlugin):
     '''Publishes the amout of tasks in a responsibility-group at a given day.
+        TODO: Publish both:
+                    - Task is in a group
+                    - Task is in a group and does not have a responsible worker
+                        (how does this differ from currentWorker again?)
     '''
     def __init__(self, target_id):
         self.target_id = target_id
@@ -21,4 +25,3 @@ class ResponsibilityGroupOutputPlugin(ApiModels.OutputPlugin):
     def __rest_resource(self):
         print('Url is: ', request.query_string)
         return { 'countPerGroupName': self.output_data }
-        # return 'Hello there!'

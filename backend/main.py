@@ -3,9 +3,7 @@ from flask_cors import CORS
 
 from business_logic.data_processing_program import DataProcessingProgram
 from plugins.input.test_data_input_plugin import TestDataInputPlugin as InputPlugin
-from plugins.transform.sample_transform_one_plugin import SampleTransformOnePlugin
-from plugins.transform.sample_transform_two_plugin import SampleTransformTwoPlugin
-from plugins.output.sample_rest_output_plugin import SampleOutputPlugin
+from plugins.transform.responsibilities_transform_plugin import ResponsibilitiesTransformPlugin
 from plugins.output.responsibility_group_output_plugin import ResponsibilityGroupOutputPlugin
 
 flask_app = Flask(__name__)
@@ -18,8 +16,8 @@ CORS(flask_app)
 
 if __name__ == '__main__':
     input_plugin = InputPlugin()
-    transform_plugins = [SampleTransformOnePlugin('id_transform_one'), SampleTransformTwoPlugin('id_transform_two')]
-    output_plugins = [SampleOutputPlugin('id_transform_two'), ResponsibilityGroupOutputPlugin('id_transform_one')]
+    transform_plugins = [ResponsibilitiesTransformPlugin('id_responsibilities')]
+    output_plugins = [ResponsibilityGroupOutputPlugin('id_responsibilities')]
 
     program = DataProcessingProgram(flask_app,
                                     input_data_plugin=input_plugin,
