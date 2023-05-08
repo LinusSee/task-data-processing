@@ -31,6 +31,10 @@ class ProcessedTask:
         self.end_date = end_date
         return self
     
+    def with_responsible_worker(self, responsible_worker):
+        self.responsible_worker = responsible_worker
+        return self
+    
     def with_current_worker(self, current_worker):
         self.current_worker = current_worker
         return self
