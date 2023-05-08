@@ -182,7 +182,7 @@ viewLabeledBarChart data =
     div [ class "bar-chart" ]
         [ C.chart
             [ CA.height 300
-            , CA.width 600
+            , CA.width 1600
             ]
             [ C.yLabels [ CA.withGrid ]
             , C.binLabels .label [ CA.moveDown 24 ]
@@ -190,7 +190,7 @@ viewLabeledBarChart data =
                 []
                 [ C.bar .count [] ]
                 data
-            , C.barLabels [ CA.moveDown 24, CA.color "white" ]
+            , C.barLabels [ CA.moveUp 8 ]
             ]
         ]
 
