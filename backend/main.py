@@ -3,8 +3,8 @@ from flask_cors import CORS
 
 from business_logic.data_processing_program import DataProcessingProgram
 
-from plugins.input.test_data_input_plugin import TestDataInputPlugin as InputPlugin
-#from plugins.input.processed_tasks_input_plugin import ProcessedTasksInputPlugin as InputPlugin
+#from plugins.input.test_data_input_plugin import TestDataInputPlugin as InputPlugin
+from plugins.input.processed_tasks_input_plugin import ProcessedTasksInputPlugin as InputPlugin
 
 from plugins.transform.responsibilities_transform_plugin import ResponsibilitiesTransformPlugin
 from plugins.output.processed_task_to_csv_output_plugin import ProcessedTaskToCsvOutputPlugin

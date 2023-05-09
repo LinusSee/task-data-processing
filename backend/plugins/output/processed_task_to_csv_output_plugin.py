@@ -14,8 +14,17 @@ class ProcessedTaskToCsvOutputPlugin(ApiModels.OutputPlugin):
 
     def output(self, output_data):
         filename = './test_data/processed_tasks.csv'
-        headers = ['task_index', 'task_creation_date', 'task_end_date', 'task_responsible_group', 'task_responsible_worker', 'task_current_worker',
-                   'ps_creation_date', 'ps_responsible_group', 'ps_responsible_worker']
+        headers = [ 'task_index'
+                   , 'task_creation_date'
+                   , 'task_end_date'
+                   , 'task_responsible_group'
+                   , 'task_responsible_worker'
+                   , 'task_current_worker'
+                   , 'ps_creation_date'
+                   , 'ps_responsible_group'
+                   , 'ps_responsible_worker'
+                   , 'ps_current_worker'
+                   ]
         
         rows = []
 
@@ -41,8 +50,9 @@ class ProcessedTaskToCsvOutputPlugin(ApiModels.OutputPlugin):
                 , self.__datetime_to_iso_string(task.creation_date)
                 , self.__datetime_to_iso_string(task.end_date)
                 , task.responsible_group
-                , None # Dont want to send those to myself
-                , None # Dont want to send those to myself
+                , task.responsible_worker
+                , task.current_worker
+                , None
                 , None
                 , None
                 , None
@@ -53,11 +63,12 @@ class ProcessedTaskToCsvOutputPlugin(ApiModels.OutputPlugin):
                 , self.__datetime_to_iso_string(task.creation_date)
                 , self.__datetime_to_iso_string(task.end_date)
                 , task.responsible_group
-                , None # Dont want to send those to myself
-                , None # Dont want to send those to myself
+                , task.responsible_worker
+                , task.current_worker
                 , self.__datetime_to_iso_string(processing_status.creation_date)
-                , None # Dont want to send those to myself
-                , None # Dont want to send those to myself
+                , processing_status.responsible_group
+                , processing_status.responsible_worker
+                , processing_status.current_worker
                 ]
     
 

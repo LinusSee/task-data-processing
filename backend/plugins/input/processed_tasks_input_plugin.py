@@ -42,10 +42,12 @@ class ProcessedTasksInputPlugin(ApiModels.ReadDataPlugin):
                 ps_creation_date = self.__datetime_from_iso_string(source_row[column_indices['ps_creation_date']])
                 ps_responsible_group = source_row[column_indices['ps_responsible_group']]
                 ps_responsible_worker = source_row[column_indices['ps_responsible_worker']]
+                ps_current_worker = source_row[column_indices['ps_current_worker']]
                 processing_status = ApiModels.ProcessingStatus()
                 processing_status.creation_date = ps_creation_date
                 processing_status.responsible_group = ps_responsible_group
                 processing_status.responsible_worker = ps_responsible_worker
+                processing_status.current_worker = ps_current_worker
                 current_task.processing_status.append(processing_status)
             else:
                 current_index = source_row[column_indices['task_index']]
@@ -66,16 +68,3 @@ class ProcessedTasksInputPlugin(ApiModels.ReadDataPlugin):
 
     def __datetime_from_iso_string(self, datetime_string):
         return datetime.fromisoformat(datetime_string) if datetime_string is not None and datetime_string != '' else None
-
-
-    
-
-
-'''
-Für die Testdaten mögliche Gruppenhierarchie
-
-    G_Prozess_A_Aufgabe_A
-    G_Prozess_B_Aufgabe_A
-    G_Prozess_C_Aufgabe_A
-    G_Prozess_D_Aufgabe_A
-'''
