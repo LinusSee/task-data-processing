@@ -4,7 +4,7 @@ import Browser
 import Browser.Navigation as Nav
 import Chart as C
 import Chart.Attributes as CA
-import Html exposing (Html, a, div, h2, li, nav, text, ul)
+import Html exposing (Html, a, div, h2, li, nav, table, tbody, td, text, th, thead, tr, ul)
 import Html.Attributes exposing (..)
 import Http
 import Json.Decode as Decode exposing (Decoder, field, float, string)
@@ -171,13 +171,14 @@ viewResponsibilities model =
     div []
         [ h2 []
             [ text "Responsibilities" ]
+        , viewResponsibilitiesTable model.responsibilityGroupCount
         , div
             [ class "charts-container" ]
             [ viewLabeledBarChart model.responsibilityGroupCount ]
         ]
 
 
-viewLabeledBarChart : List { label : String, count : Float } -> Html.Html Msg
+viewLabeledBarChart : List LabeledCount -> Html.Html Msg
 viewLabeledBarChart data =
     div [ class "bar-chart" ]
         [ C.chart
@@ -195,6 +196,32 @@ viewLabeledBarChart data =
         ]
 
 
+viewResponsibilitiesTable : List LabeledCount -> Html.Html Msg
+viewResponsibilitiesTable labeledCounts =
+    let
+        createRow labeledCount =
+            tr [ class "labeled-count-table__data-row" ]
+                [ td [ class "labeled-count-table__cell", class "labeled-count-table__data-cell" ]
+                    [ text labeledCount.key ]
+                , td [ class "labeled-count-table__cell", class "labeled-count-table__data-cell" ]
+                    [ text labeledCount.label ]
+                , td [ class "labeled-count-table__cell", class "labeled-count-table__data-cell", class "labeled-count-table__cell--number" ]
+                    [ text <| String.fromFloat labeledCount.count ]
+                ]
+    in
+    table [ class "labeled-count-table" ]
+        [ thead [ class "labeled-count-table__header" ]
+            [ tr [ class "labeled-count-table__header-row" ]
+                [ th [ class "labeled-count-table__cell", class "labeled-count-table__header-cell" ] [ text "Key" ]
+                , th [ class "labeled-count-table__cell", class "labeled-count-table__header-cell" ] [ text "Label" ]
+                , th [ class "labeled-count-table__cell", class "labeled-count-table__header-cell" ] [ text "Count" ]
+                ]
+            ]
+        , tbody [ class "labeled-count-table__header" ]
+            (List.map createRow labeledCounts)
+        ]
+
+
 
 -- SUBSCRIPTIONS
 
@@ -209,7 +236,8 @@ subscriptions model =
 
 
 type alias LabeledCount =
-    { label : String
+    { key : String
+    , label : String
     , count : Float
     }
 
@@ -240,6 +268,7 @@ labeledCountsDecoder =
 
 labeledCountDecoder : Decoder LabeledCount
 labeledCountDecoder =
-    Decode.map2 LabeledCount
+    Decode.map3 LabeledCount
+        (field "key" string)
         (field "label" string)
         (field "count" float)

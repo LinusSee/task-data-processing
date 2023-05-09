@@ -1,3 +1,10 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    margin: 24px;
+}
+
+
 .charts-container {
     display: flex;
 }
@@ -13,4 +20,46 @@
     height: 300px;
     width: 1600px;
     padding: 60px;
+}
+
+
+
+
+/*
+ * START: Table styles
+ */
+.labeled-count-table {
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    border: 1px solid #00cccc;
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.10),
+        0px 10px 20px rgba(0, 0, 0, 0.05),
+        0px 20px 20px rgba(0, 0, 0, 0.05),
+        0px 30px 20px rgba(0, 0, 0, 0.05);
+}
+
+.labeled-count-table__cell {
+    padding: 0.7rem;
+}
+
+.labeled-count-table__header-cell {
+    background: #00cccc;
+    color: #ffffff;
+    border: 1px solid #eeeeee
+}
+
+.labeled-count-table__data-cell {
+    border: 1px solid #999;
+}
+
+/* .labeled-count-table__data-row:last-child {
+    border-right: none;
+}
+
+.labeled-count-table__data-row:last-child {
+    border: none;
+} */
+
+.labeled-count-table__cell--number {
+    text-align: right;
 }

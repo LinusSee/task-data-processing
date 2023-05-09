@@ -13,6 +13,6 @@ class ResponsibilitiesTransformPlugin(ApiModels.TransformPlugin):
         
         return_data = []
         for item in counted_groups.items():
-            return_data.append({'label': item[0].replace('_', ' '), 'count': item[1]})
+            return_data.append({'key': item[0], 'label': item[0].replace('_', ' '), 'count': item[1]})
 
         return (self.target_id, return_data)
