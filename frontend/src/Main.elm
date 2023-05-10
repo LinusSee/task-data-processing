@@ -4,11 +4,15 @@ import Browser
 import Browser.Navigation as Nav
 import Chart as C
 import Chart.Attributes as CA
-import Html exposing (Html, a, div, h2, li, nav, table, tbody, td, text, th, thead, tr, ul)
+import Date
+import Html exposing (Html, a, div, h2, input, li, nav, table, tbody, td, text, th, thead, tr, ul)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onInput)
 import Http
 import Json.Decode as Decode exposing (Decoder, field, float, string)
+import Task
 import Url
+import Url.Builder as UrlBuilder
 import Url.Parser as Parser exposing (Parser, s)
 
 
@@ -33,16 +37,13 @@ main =
 
 
 type alias Model =
-    { page : Page, responsibilityGroupCount : List LabeledCount, key : Nav.Key }
+    { page : Page, selectedDate : String, responsibilityGroupCount : List LabeledCount, key : Nav.Key }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( { page = urlToPage url, responsibilityGroupCount = [], key = key }
-    , Http.get
-        { url = "http://localhost:5000/responsibility-groups/count"
-        , expect = Http.expectJson GotResponsibilityGroupCount responsibilityGroupCountDecoder
-        }
+    ( { page = urlToPage url, selectedDate = "", responsibilityGroupCount = [], key = key }
+    , Task.perform GotInitialDate Date.today
     )
 
 
@@ -59,6 +60,8 @@ type Page
 type Msg
     = ClickedLink Browser.UrlRequest
     | ChangedUrl Url.Url
+    | GotInitialDate Date.Date
+    | ChangeDate String
     | GotResponsibilityGroupCount (Result Http.Error (List LabeledCount))
 
 
@@ -75,6 +78,26 @@ update msg model =
 
         ChangedUrl url ->
             ( { model | page = urlToPage url }, Cmd.none )
+
+        GotInitialDate date ->
+            let
+                newDateString =
+                    Date.toIsoString date
+            in
+            ( { model | selectedDate = newDateString }
+            , Http.get
+                { url = UrlBuilder.crossOrigin "http://localhost:5000/responsibility-groups" [ "count" ] [ UrlBuilder.string "filter-date" newDateString ]
+                , expect = Http.expectJson GotResponsibilityGroupCount responsibilityGroupCountDecoder
+                }
+            )
+
+        ChangeDate newDateString ->
+            ( { model | selectedDate = newDateString }
+            , Http.get
+                { url = UrlBuilder.crossOrigin "http://localhost:5000/responsibility-groups" [ "count" ] [ UrlBuilder.string "filter-date" newDateString ]
+                , expect = Http.expectJson GotResponsibilityGroupCount responsibilityGroupCountDecoder
+                }
+            )
 
         GotResponsibilityGroupCount response ->
             case response of
@@ -106,15 +129,6 @@ view model =
         , viewCharts model
         ]
     }
-
-
-barSampleData : List { label : String, count : Float }
-barSampleData =
-    -- [ { start = 1, end = 3, y = 5 }, { start = 4, end = 6, y = 7 }, { start = 7, end = 9, y = 9 } ]
-    [ { label = "Gruppe 1", count = 39 }
-    , { label = "Gruppe 2", count = 244 }
-    , { label = "Gruppe 4", count = 3109 }
-    ]
 
 
 viewHeader : Html.Html Msg
@@ -171,6 +185,7 @@ viewResponsibilities model =
     div []
         [ h2 []
             [ text "Responsibilities" ]
+        , viewDateInput model.selectedDate
         , viewResponsibilitiesTable model.responsibilityGroupCount
         , div
             [ class "charts-container" ]
@@ -178,7 +193,7 @@ viewResponsibilities model =
         ]
 
 
-viewLabeledBarChart : List LabeledCount -> Html.Html Msg
+viewLabeledBarChart : List LabeledCount -> Html Msg
 viewLabeledBarChart data =
     div [ class "bar-chart" ]
         [ C.chart
@@ -196,7 +211,12 @@ viewLabeledBarChart data =
         ]
 
 
-viewResponsibilitiesTable : List LabeledCount -> Html.Html Msg
+viewDateInput : String -> Html Msg
+viewDateInput dateString =
+    input [ type_ "date", onInput ChangeDate, value dateString ] []
+
+
+viewResponsibilitiesTable : List LabeledCount -> Html Msg
 viewResponsibilitiesTable labeledCounts =
     let
         createRow labeledCount =
