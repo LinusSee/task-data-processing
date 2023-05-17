@@ -5,7 +5,7 @@ import Chart as C
 import Chart.Attributes as CA
 import Date
 import Dict exposing (Dict)
-import Html exposing (Html, div, h2, input, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, div, input, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 import Http
@@ -120,7 +120,7 @@ update msg model =
 
         GotResponsibilityGroupCount response ->
             case response of
-                Err errorMsg ->
+                Err _ ->
                     ( { model | responsibilityGroupCount = [] }, Cmd.none )
 
                 Ok counts ->

@@ -9,44 +9,15 @@ class ResponsibilitiesTransformPlugin(ApiModels.TransformPlugin):
     def __init__(self, target_id):
         self.target_id = target_id
 
-    def transform(self, data: list[ApiModels.ProcessedTask]):
-        counted_groups = dict()
+    def transform(self, processed_tasks: list[ApiModels.ProcessedTask]):
+        transformed_data = self.__transform_to_changeset(processed_tasks)
 
-        for task in data:
-            counted_groups[task.responsible_group] = counted_groups.setdefault(task.responsible_group, 0) + 1
-        
-        return_data = []
-        for item in counted_groups.items():
-            return_data.append({'key': item[0], 'label': item[0].replace('_', ' '), 'count': item[1]})
-
-        my_data = self.__my_transform(data)
-        my_return = self.__aggregate_data(my_data, date.today())
-
-        return_data = []
-        for item in my_return.items():
-            return_data.append({'key': item[0], 'label': item[0].replace('_', ' '), 'count': item[1]})
-
-        return (self.target_id, my_data)
-    
-
-    def __aggregate_data(self, count_data, target_date):
-        # TODO: Possible bug for target=start or target < start
-        target_days = (target_date - count_data['start_date']).days + 1
-        passed_days = min(count_data['total_saved_days'], target_days)
-        count_dict = dict.fromkeys(count_data['groups'].keys(), 0)
-        print(f'TargetDays {target_days}')
-        print(f'PassedDays {passed_days}')
-        for (group_key, group_data) in count_data['groups'].items():
-            # for change in group_data['changes']:
-            #     count_dict[group_key] += change
-            count_dict[group_key] = sum(group_data['changes'][:passed_days])
-
-        return count_dict
+        return (self.target_id, transformed_data)
 
 
 
-    def __my_transform(self, data):
-        ''' Transform to a format that allows querying the count for a specific day
+    def __transform_to_changeset(self, data):
+        ''' Transform to a format that allows querying the count for a specific day.
         '''
         start_date = date.today()
         keys = set()
@@ -71,8 +42,6 @@ class ResponsibilitiesTransformPlugin(ApiModels.TransformPlugin):
         current_group_dict = dict()
         current_date = start_date
         
-        print(f'StartDate is {start_date}')
-        print(f'Total days are {total_days}')
         for passed_days in range(total_days):
             current_date = start_date + timedelta(days=passed_days)
 
@@ -96,8 +65,6 @@ class ResponsibilitiesTransformPlugin(ApiModels.TransformPlugin):
                         result['groups'][previous_group]['changes'][passed_days] -= 1
                     current_group_dict[task_index] = status.responsible_group
                     result['groups'][status.responsible_group]['changes'][passed_days] += 1
-                    
-        print(f'Result for groups is: {result["groups"]}')
 
         return result
 

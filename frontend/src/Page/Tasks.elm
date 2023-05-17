@@ -17,7 +17,7 @@ type alias Model =
 
 
 init : Nav.Key -> ( Model, Cmd Msg )
-init key =
+init _ =
     ( { infoText = "Hello Tasks!" }, Cmd.none )
 
 

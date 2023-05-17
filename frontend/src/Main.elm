@@ -2,7 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Html, a, div, h2, li, nav, text, ul)
+import Html exposing (Html, a, li, nav, text, ul)
 import Html.Attributes exposing (..)
 import Page.Responsibilities as Responsibilities
 import Page.Tasks as Tasks
@@ -36,7 +36,7 @@ type alias Model =
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init flags url key =
+init _ url key =
     updateUrl url { page = NotFoundPage, key = key }
 
 
@@ -141,7 +141,7 @@ viewHeader =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 

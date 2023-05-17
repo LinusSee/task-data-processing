@@ -17,50 +17,42 @@ class ResponsibilityGroupOutputPlugin(ApiModels.OutputPlugin):
         self.type = 'PluginWithSetup'
 
     def setup(self, app):
-        app.add_url_rule('/responsibility-groups/count', view_func=self.__rest_resource)
+        app.add_url_rule('/responsibility-groups/count', view_func=self.__responsibility_group_count_rest_resource)
+
 
     def output(self, output_data):
-        print('Output: ', output_data)
         self.output_data = output_data
 
-    def __rest_resource(self):
-        print('Url is: ', request.query_string)
+
+    def __responsibility_group_count_rest_resource(self):
         filter_date_string = request.args.get('filter-date')
-        print(f'Filter date string is: {filter_date_string}')
         filter_date = date.fromisoformat(filter_date_string)
-        print(f'Filter date is: {filter_date_string}')
 
+        task_counts = self.__get_task_counts_for_group(self.output_data, filter_date)
+        return_data = self.__task_counts_to_response(task_counts)
 
-        # counts = self.output_data
-        # counts.sort(key=lambda x: x['count'])
-
-        ###
-        my_return = self.__aggregate_data(self.output_data, filter_date)
-        return_data = []
-        for item in my_return.items():
-            return_data.append({'key': item[0], 'label': item[0].replace('_', ' '), 'count': item[1]})
-        return_data.sort(key=lambda x: x['count'])
-        ###
-        #return { 'countPerGroupName': self.output_data }
         return { 'countPerGroupName': return_data }
     
 
-    def __aggregate_data(self, count_data, target_date):
+    def __get_task_counts_for_group(self, count_data, target_date):
+        ''' Calculates the number of tasks in each group at a given date.
+        '''
         # TODO: Possible bug for target=start or target < start
         target_days = (target_date - count_data['start_date']).days + 1
         passed_days = min(count_data['total_saved_days'], target_days)
         count_dict = dict.fromkeys(count_data['groups'].keys(), 0)
-        print(f'TargetDays {target_days}')
-        print(f'PassedDays {passed_days}')
+
         for (group_key, group_data) in count_data['groups'].items():
-            # for change in group_data['changes']:
-            #     count_dict[group_key] += change
+
             count_dict[group_key] = sum(group_data['changes'][:passed_days])
 
         return count_dict
+    
 
+    def __task_counts_to_response(self, task_counts):
+        map_fn = lambda item: {'key': item[0], 'label': item[0].replace('_', ' '), 'count': item[1]}
 
-    '''
-    Format je task:
-        [(date, group)]
-    '''
+        return_data = list(map(map_fn, list(task_counts.items())))
+        return_data.sort(key=lambda x: x['count'])
+
+        return return_data
