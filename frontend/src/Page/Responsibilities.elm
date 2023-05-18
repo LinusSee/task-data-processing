@@ -80,7 +80,10 @@ init _ =
       , history = { pastDays = 14, selectedGroups = [], historySelection = GroupSelected Dict.empty (OneGroupData [ { date = 0, groupOne = 1 } ]) }
       , responsibilityGroupCount = []
       }
-    , Cmd.batch [ Task.perform GotInitialDate Date.today, getHistoryData 14 [ "KS_LEBEN_ANTRAGSERFASSUNG_PRIVAT", "SHU_GEWERBESERVICE", "KS_LEBEN_VERTRAG", "TEST_USER_GRUPPE_SHUK" ] ]
+    , Cmd.batch
+        [ Task.perform GotInitialDate Date.today
+        , getHistoryData 14 [ "KS_LEBEN_ANTRAGSERFASSUNG_PRIVAT", "SHU_GEWERBESERVICE", "KS_LEBEN_VERTRAG", "TEST_USER_GRUPPE_SHUK" ]
+        ]
     )
 
 

@@ -4,6 +4,7 @@ import Browser
 import Browser.Navigation as Nav
 import Html exposing (Html, a, li, nav, text, ul)
 import Html.Attributes exposing (..)
+import Page.Forwarding as Forwarding
 import Page.Responsibilities as Responsibilities
 import Page.Tasks as Tasks
 import Time exposing (Month(..))
@@ -41,13 +42,15 @@ init _ url key =
 
 
 type Page
-    = ResponsibilitiesPage Responsibilities.Model
+    = ForwardingPage Forwarding.Model
+    | ResponsibilitiesPage Responsibilities.Model
     | TasksPage Tasks.Model
     | NotFoundPage
 
 
 type Route
-    = Responsibilities
+    = Forwarding
+    | Responsibilities
     | Tasks
     | NotFound
 
@@ -59,6 +62,7 @@ type Route
 type Msg
     = ClickedLink Browser.UrlRequest
     | ChangedUrl Url.Url
+    | GotForwardingMsg Forwarding.Msg
     | GotResponsibilitiesMsg Responsibilities.Msg
     | GotTasksMsg Tasks.Msg
 
@@ -76,6 +80,14 @@ update msg model =
 
         ChangedUrl url ->
             updateUrl url model
+
+        GotForwardingMsg forwardingMsg ->
+            case model.page of
+                ForwardingPage forwardingModel ->
+                    toForwardingPage model (Forwarding.update forwardingMsg forwardingModel)
+
+                _ ->
+                    ( model, Cmd.none )
 
         GotResponsibilitiesMsg responsibilitiesMsg ->
             case model.page of
@@ -111,11 +123,19 @@ view model =
 viewPage : Page -> Html Msg
 viewPage page =
     case page of
+        ForwardingPage model ->
+            Forwarding.view model
+                |> Html.map GotForwardingMsg
+
         ResponsibilitiesPage model ->
             Responsibilities.view model
                 |> Html.map GotResponsibilitiesMsg
 
-        _ ->
+        TasksPage model ->
+            Tasks.view model
+                |> Html.map GotTasksMsg
+
+        NotFoundPage ->
             text "Other pages"
 
 
@@ -124,7 +144,8 @@ viewHeader =
     let
         links =
             ul []
-                [ navLink { url = "/responsibilities", label = "Responsibilities" }
+                [ navLink { url = "/forwarding", label = "Forwarding" }
+                , navLink { url = "/responsibilities", label = "Responsibilities" }
                 , navLink { url = "/tasks", label = "Tasks" }
                 , navLink { url = "/unknown-url", label = "Unknown page" }
                 ]
@@ -152,6 +173,9 @@ subscriptions _ =
 updateUrl : Url.Url -> Model -> ( Model, Cmd Msg )
 updateUrl url model =
     case Parser.parse routeParser url of
+        Just Forwarding ->
+            toForwardingPage model (Forwarding.init model.key)
+
         Just Responsibilities ->
             toResponsibilitiesPage model (Responsibilities.init model.key)
 
@@ -165,9 +189,17 @@ updateUrl url model =
 routeParser : Parser (Route -> a) a
 routeParser =
     Parser.oneOf
-        [ Parser.map Responsibilities (s "responsibilities")
+        [ Parser.map Forwarding (s "forwarding")
+        , Parser.map Responsibilities (s "responsibilities")
         , Parser.map Tasks (s "tasks")
         ]
+
+
+toForwardingPage : Model -> ( Forwarding.Model, Cmd Forwarding.Msg ) -> ( Model, Cmd Msg )
+toForwardingPage model ( forwardingModel, forwardingMsg ) =
+    ( { model | page = ForwardingPage forwardingModel }
+    , Cmd.map GotForwardingMsg forwardingMsg
+    )
 
 
 toResponsibilitiesPage : Model -> ( Responsibilities.Model, Cmd Responsibilities.Msg ) -> ( Model, Cmd Msg )
