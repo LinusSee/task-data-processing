@@ -4,6 +4,7 @@ import Browser.Navigation as Nav
 import Date exposing (Date)
 import Html exposing (Html, div, h2, input, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onInput)
 import Http
 import Json.Decode as Decode exposing (Decoder, field, float, string)
 import Task
@@ -15,8 +16,7 @@ import Url.Builder as UrlBuilder
 
 
 type alias Model =
-    { infoText : String
-    , selectedDate : String
+    { selectedDate : String
     , forwardingGroupCounts : List ForwardingGroupCount
     }
 
@@ -35,8 +35,7 @@ type alias ForwardingGroupCount =
 
 init : Nav.Key -> ( Model, Cmd Msg )
 init _ =
-    ( { infoText = "Stop being so forward"
-      , selectedDate = ""
+    ( { selectedDate = ""
       , forwardingGroupCounts = []
       }
     , Task.perform GotInitialDate Date.today
@@ -49,6 +48,7 @@ init _ =
 
 type Msg
     = GotInitialDate Date
+    | ChangeDate String
     | GotForwardingCounts (Result Http.Error (List ForwardingGroupCount))
 
 
@@ -60,6 +60,9 @@ update msg model =
                 newDate =
                     Date.toIsoString initialDate
             in
+            ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
+
+        ChangeDate newDate ->
             ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
 
         GotForwardingCounts result ->
@@ -79,9 +82,14 @@ view : Model -> Html Msg
 view model =
     div []
         [ h2 [] [ text "Forwarding" ]
-        , text model.infoText
+        , viewDateInput model.selectedDate
         , viewForwardingCountsTable model.forwardingGroupCounts
         ]
+
+
+viewDateInput : String -> Html Msg
+viewDateInput dateString =
+    input [ type_ "date", onInput ChangeDate, value dateString ] []
 
 
 viewForwardingCountsTable : List ForwardingGroupCount -> Html Msg
