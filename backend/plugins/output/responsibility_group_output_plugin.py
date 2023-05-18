@@ -40,7 +40,7 @@ class ResponsibilityGroupOutputPlugin(ApiModels.OutputPlugin):
         # TODO: Possible bug for target=start or target < start
         target_days = (target_date - count_data['start_date']).days + 1
         passed_days = min(count_data['total_saved_days'], target_days)
-        count_dict = dict.fromkeys(count_data['groups'].keys(), 0)
+        count_dict = dict.fromkeys(count_data['groups'].keys())
 
         for (group_key, group_data) in count_data['groups'].items():
 

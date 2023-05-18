@@ -1,5 +1,4 @@
 import models.api_models as ApiModels
-from datetime import datetime
 from datetime import date
 from datetime import timedelta
 
@@ -16,14 +15,15 @@ class ResponsibilitiesTransformPlugin(ApiModels.TransformPlugin):
 
 
 
-    def __transform_to_changeset(self, data):
+    def __transform_to_changeset(self, processed_tasks: list[ApiModels.ProcessedTask]):
         ''' Transform to a format that allows querying the count for a specific day.
         '''
-        start_date = date.today()
+        start_date = date.today() # The date of the oldest task
         keys = set()
 
-        for task in data:
+        for task in processed_tasks:
             # Only add if task is not assigned to user?
+            # Does this even return all groups? What about past groups (e.g. through forwarding)
             keys.add(task.responsible_group)
             creation_date = task.creation_date.date()
             if creation_date < start_date:
@@ -33,10 +33,8 @@ class ResponsibilitiesTransformPlugin(ApiModels.TransformPlugin):
         result = {
             'start_date': start_date,
             'total_saved_days': total_days,
-            'groups': dict.fromkeys(keys, { 'initial_count': 0, 'changes': [] })
+            'groups': dict(list(map(lambda key: (key, {'changes': []}), keys)))
         }
-        for group_key in result['groups'].keys():
-                result['groups'][group_key] = { 'initial_count': 0, 'changes': [] }
         
         # Task to current group
         current_group_dict = dict()
@@ -48,7 +46,7 @@ class ResponsibilitiesTransformPlugin(ApiModels.TransformPlugin):
             for group_data in result['groups'].values():
                 group_data['changes'].append(0)
 
-            for (task_index, task) in zip(range(len(data)), data):
+            for (task_index, task) in zip(range(len(processed_tasks)), processed_tasks):
                 for status in task.processing_status:
                     if status.creation_date.date() > current_date:
                         break # Requiring sorted data so we can stop at the first date that is "too new"

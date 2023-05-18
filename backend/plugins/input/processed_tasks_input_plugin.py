@@ -39,11 +39,13 @@ class ProcessedTasksInputPlugin(ApiModels.ReadDataPlugin):
         current_task = None
         for source_row in source_data:
             if source_row[column_indices['task_index']] == current_index:
+                ps_name = source_row[column_indices['ps_name']]
                 ps_creation_date = self.__datetime_from_iso_string(source_row[column_indices['ps_creation_date']])
                 ps_responsible_group = source_row[column_indices['ps_responsible_group']]
                 ps_responsible_worker = source_row[column_indices['ps_responsible_worker']]
                 ps_current_worker = source_row[column_indices['ps_current_worker']]
                 processing_status = ApiModels.ProcessingStatus()
+                processing_status.status_name = ps_name
                 processing_status.creation_date = ps_creation_date
                 processing_status.responsible_group = ps_responsible_group
                 processing_status.responsible_worker = ps_responsible_worker

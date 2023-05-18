@@ -20,6 +20,7 @@ class ProcessedTaskToCsvOutputPlugin(ApiModels.OutputPlugin):
                    , 'task_responsible_group'
                    , 'task_responsible_worker'
                    , 'task_current_worker'
+                   , 'ps_name'
                    , 'ps_creation_date'
                    , 'ps_responsible_group'
                    , 'ps_responsible_worker'
@@ -56,6 +57,7 @@ class ProcessedTaskToCsvOutputPlugin(ApiModels.OutputPlugin):
                 , None
                 , None
                 , None
+                , None
                 ]
     
     def __map_processing_status(self, task_index, task, processing_status):
@@ -65,6 +67,7 @@ class ProcessedTaskToCsvOutputPlugin(ApiModels.OutputPlugin):
                 , task.responsible_group
                 , task.responsible_worker
                 , task.current_worker
+                , processing_status.status_name
                 , self.__datetime_to_iso_string(processing_status.creation_date)
                 , processing_status.responsible_group
                 , processing_status.responsible_worker

@@ -2,6 +2,7 @@ import datetime
 
 
 class ProcessingStatus:
+    status_name: str
     creation_date: datetime.datetime
     responsible_group: str
     responsible_worker: str #| None

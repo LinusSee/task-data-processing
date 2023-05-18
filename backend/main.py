@@ -7,10 +7,12 @@ from business_logic.data_processing_program import DataProcessingProgram
 from plugins.input.processed_tasks_input_plugin import ProcessedTasksInputPlugin as InputPlugin
 
 from plugins.transform.responsibilities_transform_plugin import ResponsibilitiesTransformPlugin
+from plugins.transform.forwarding_transform_plugin import ForwardingTransformPlugin
 from plugins.output.processed_task_to_csv_output_plugin import ProcessedTaskToCsvOutputPlugin
 
 from plugins.output.responsibility_group_output_plugin import ResponsibilityGroupOutputPlugin
 from plugins.output.responsibility_history_output_plugin import ResponsibilityHistoryOutputPlugin
+from plugins.output.forwarding_group_output_plugin import ForwardingGroupOutputPlugin
 
 
 
@@ -25,9 +27,11 @@ CORS(flask_app)
 if __name__ == '__main__':
     input_plugin = InputPlugin()
     transform_plugins = [ ResponsibilitiesTransformPlugin('id_responsibilities')
+                         , ForwardingTransformPlugin('id_forwarding')
                         ]
     output_plugins = [ ResponsibilityGroupOutputPlugin('id_responsibilities')
                       , ResponsibilityHistoryOutputPlugin('id_responsibilities')
+                      , ForwardingGroupOutputPlugin('id_forwarding')
                       ]
 
     program = DataProcessingProgram(flask_app,
