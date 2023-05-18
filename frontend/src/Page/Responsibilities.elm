@@ -121,8 +121,8 @@ update msg model =
                 }
             )
 
-        GotResponsibilityGroupCount response ->
-            case response of
+        GotResponsibilityGroupCount result ->
+            case result of
                 Err _ ->
                     ( { model | responsibilityGroupCount = [] }, Cmd.none )
 

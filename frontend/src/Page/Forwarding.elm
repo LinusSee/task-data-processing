@@ -1,7 +1,13 @@
 module Page.Forwarding exposing (..)
 
 import Browser.Navigation as Nav
-import Html exposing (Html, div, h2, text)
+import Date exposing (Date)
+import Html exposing (Html, div, h2, input, table, tbody, td, text, th, thead, tr)
+import Html.Attributes exposing (..)
+import Http
+import Json.Decode as Decode exposing (Decoder, field, float, string)
+import Task
+import Url.Builder as UrlBuilder
 
 
 
@@ -9,7 +15,18 @@ import Html exposing (Html, div, h2, text)
 
 
 type alias Model =
-    { infoText : String }
+    { infoText : String
+    , selectedDate : String
+    , forwardingGroupCounts : List ForwardingGroupCount
+    }
+
+
+type alias ForwardingGroupCount =
+    { key : String
+    , label : String
+    , inboundCount : Float
+    , outboundCount : Float
+    }
 
 
 
@@ -18,8 +35,11 @@ type alias Model =
 
 init : Nav.Key -> ( Model, Cmd Msg )
 init _ =
-    ( { infoText = "Stop being so forward" }
-    , Cmd.none
+    ( { infoText = "Stop being so forward"
+      , selectedDate = ""
+      , forwardingGroupCounts = []
+      }
+    , Task.perform GotInitialDate Date.today
     )
 
 
@@ -28,14 +48,27 @@ init _ =
 
 
 type Msg
-    = Nothing
+    = GotInitialDate Date
+    | GotForwardingCounts (Result Http.Error (List ForwardingGroupCount))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Nothing ->
-            ( model, Cmd.none )
+        GotInitialDate initialDate ->
+            let
+                newDate =
+                    Date.toIsoString initialDate
+            in
+            ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
+
+        GotForwardingCounts result ->
+            case result of
+                Err _ ->
+                    ( { model | forwardingGroupCounts = [] }, Cmd.none )
+
+                Ok groupCounts ->
+                    ( { model | forwardingGroupCounts = groupCounts }, Cmd.none )
 
 
 
@@ -47,4 +80,64 @@ view model =
     div []
         [ h2 [] [ text "Forwarding" ]
         , text model.infoText
+        , viewForwardingCountsTable model.forwardingGroupCounts
         ]
+
+
+viewForwardingCountsTable : List ForwardingGroupCount -> Html Msg
+viewForwardingCountsTable counts =
+    let
+        createRow count =
+            tr [ class "labeled-count-table__data-row" ]
+                [ td [ class "labeled-count-table__cell", class "labeled-count-table__data-cell" ]
+                    [ text count.key ]
+                , td [ class "labeled-count-table__cell", class "labeled-count-table__data-cell", class "labeled-count-table__cell--number" ]
+                    [ text <| String.fromFloat count.inboundCount ]
+                , td [ class "labeled-count-table__cell", class "labeled-count-table__data-cell", class "labeled-count-table__cell--number" ]
+                    [ text <| String.fromFloat count.outboundCount ]
+                ]
+    in
+    table [ class "labeled-count-table" ]
+        [ thead [ class "labeled-count-table__header" ]
+            [ tr [ class "labeled-count-table__header-row" ]
+                [ th [ class "labeled-count-table__cell", class "labeled-count-table__header-cell" ] [ text "Key" ]
+                , th [ class "labeled-count-table__cell", class "labeled-count-table__header-cell" ] [ text "Inbound" ]
+                , th [ class "labeled-count-table__cell", class "labeled-count-table__header-cell" ] [ text "Outbound" ]
+                ]
+            ]
+        , tbody [ class "labeled-count-table__header" ]
+            (List.map createRow counts)
+        ]
+
+
+
+-- LOGIC
+
+
+getAllForwardingCounts : String -> Cmd Msg
+getAllForwardingCounts selectedDate =
+    Http.get
+        { url =
+            UrlBuilder.crossOrigin "http://localhost:5000/forwarding"
+                [ "count-by-group" ]
+                [ UrlBuilder.string "filter-date" selectedDate ]
+        , expect = Http.expectJson GotForwardingCounts forwardingGroupCountsDecoder
+        }
+
+
+
+-- DECODER
+
+
+forwardingGroupCountsDecoder : Decoder (List ForwardingGroupCount)
+forwardingGroupCountsDecoder =
+    field "countPerGroupName" (Decode.list forwardingGroupCountDecoder)
+
+
+forwardingGroupCountDecoder : Decoder ForwardingGroupCount
+forwardingGroupCountDecoder =
+    Decode.map4 ForwardingGroupCount
+        (field "key" string)
+        (field "label" string)
+        (field "inboundCount" float)
+        (field "outboundCount" float)
