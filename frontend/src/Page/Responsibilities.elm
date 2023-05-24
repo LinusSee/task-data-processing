@@ -5,9 +5,9 @@ import Chart as C
 import Chart.Attributes as CA
 import Date
 import Dict exposing (Dict)
-import Html exposing (Html, div, input, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, button, div, input, option, select, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as Decode exposing (Decoder, field, float, string)
 import Task
@@ -20,7 +20,12 @@ import Url.Builder as UrlBuilder
 
 
 type alias Model =
-    { selectedDate : String, history : HistoryModel, responsibilityGroupCount : List LabeledCount }
+    { selectedDate : String
+    , selectedGroup : String
+    , groupsForSelection : List String
+    , history : HistoryModel
+    , responsibilityGroupCount : List LabeledCount
+    }
 
 
 type alias LabeledCount =
@@ -77,13 +82,16 @@ type alias FiveGroupsDataRecord =
 init : Nav.Key -> ( Model, Cmd Msg )
 init _ =
     ( { selectedDate = ""
-      , history = { pastDays = 14, selectedGroups = [], historySelection = GroupSelected Dict.empty (OneGroupData [ { date = 0, groupOne = 1 } ]) }
+      , selectedGroup = ""
+      , groupsForSelection = []
+      , history =
+            { pastDays = 14
+            , selectedGroups = []
+            , historySelection = NoGroupSelected
+            }
       , responsibilityGroupCount = []
       }
-    , Cmd.batch
-        [ Task.perform GotInitialDate Date.today
-        , getHistoryData 14 [ "KS_LEBEN_ANTRAGSERFASSUNG_PRIVAT", "SHU_GEWERBESERVICE", "KS_LEBEN_VERTRAG", "TEST_USER_GRUPPE_SHUK" ]
-        ]
+    , Task.perform GotInitialDate Date.today
     )
 
 
@@ -94,6 +102,8 @@ init _ =
 type Msg
     = GotInitialDate Date.Date
     | ChangeDate String
+    | ChangeGroupSelection String
+    | ConfirmGroupSelection
     | GotResponsibilityGroupCount (Result Http.Error (List LabeledCount))
     | GotGroupCountHistory (Result Http.Error ( Dict String String, ResponsibilityHistoryData ))
 
@@ -121,13 +131,39 @@ update msg model =
                 }
             )
 
+        ChangeGroupSelection newGroup ->
+            ( { model | selectedGroup = newGroup }, Cmd.none )
+
+        ConfirmGroupSelection ->
+            if List.length model.history.selectedGroups <= 5 then
+                let
+                    history =
+                        model.history
+
+                    newSelectedGroups =
+                        model.selectedGroup :: history.selectedGroups
+                in
+                ( { model
+                    | selectedGroup = ""
+                    , history = { history | selectedGroups = newSelectedGroups }
+                  }
+                , getHistoryData 14 newSelectedGroups
+                )
+
+            else
+                ( model, Cmd.none )
+
         GotResponsibilityGroupCount result ->
             case result of
                 Err _ ->
                     ( { model | responsibilityGroupCount = [] }, Cmd.none )
 
                 Ok counts ->
-                    ( { model | responsibilityGroupCount = counts }, Cmd.none )
+                    let
+                        groupKeys =
+                            List.map .key counts
+                    in
+                    ( { model | responsibilityGroupCount = counts, groupsForSelection = groupKeys }, Cmd.none )
 
         GotGroupCountHistory response ->
             case response of
@@ -162,7 +198,9 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ viewHistory model.history.historySelection
+        [ viewHistorySelect model.selectedGroup model.groupsForSelection
+        , text (Debug.toString model.history.selectedGroups)
+        , viewHistory model.history.historySelection
         , viewDateInput model.selectedDate
         , viewResponsibilitiesCountTable model.responsibilityGroupCount
         ]
@@ -172,10 +210,30 @@ viewHistory : ResponsibilityHistorySelection -> Html Msg
 viewHistory data =
     case data of
         NoGroupSelected ->
-            div [] [ text "No Groups selected" ]
+            text "No groups selected yet"
 
         GroupSelected labels groupData ->
-            viewHistoryChart labels groupData
+            div [] [ viewHistoryChart labels groupData ]
+
+
+viewHistorySelect : String -> List String -> Html Msg
+viewHistorySelect currentlySelectedGroup groupsForSelection =
+    let
+        options =
+            option [ value "" ] [ text "-" ]
+                :: List.map (\group -> option [ value group ] [ text group ]) groupsForSelection
+    in
+    div []
+        [ select [ onInput ChangeGroupSelection, value currentlySelectedGroup ]
+            options
+
+        -- [ option [ value "" ] [ text "-" ]
+        -- , option [ value "Group1" ] [ text "Gruppe 1" ]
+        -- , option [ value "Group2" ] [ text "Gruppe 2" ]
+        -- ]
+        , button [ type_ "button", onClick ConfirmGroupSelection ] [ text "Ok" ]
+        , text currentlySelectedGroup
+        ]
 
 
 viewHistoryChart : Dict String String -> ResponsibilityHistoryData -> Html Msg
