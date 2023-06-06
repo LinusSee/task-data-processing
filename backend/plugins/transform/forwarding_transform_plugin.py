@@ -19,6 +19,7 @@ class ForwardingTransformPlugin(ApiModels.TransformPlugin):
         (start_date, group_keys) = self.__get_start_date_and_group_keys(processed_tasks)
         total_days = (date.today() - start_date).days
         print(f"groupKeys: {group_keys}")
+
         result = {
             'start_date': start_date,
             'total_saved_days': total_days,

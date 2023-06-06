@@ -13,6 +13,7 @@ from plugins.output.processed_task_to_csv_output_plugin import ProcessedTaskToCs
 from plugins.output.responsibility_group_output_plugin import ResponsibilityGroupOutputPlugin
 from plugins.output.responsibility_history_output_plugin import ResponsibilityHistoryOutputPlugin
 from plugins.output.forwarding_group_output_plugin import ForwardingGroupOutputPlugin
+from plugins.output.forwarding_history_output_plugin import ForwardingHistoryOutputPlugin
 
 
 
@@ -32,6 +33,7 @@ if __name__ == '__main__':
     output_plugins = [ ResponsibilityGroupOutputPlugin('id_responsibilities')
                       , ResponsibilityHistoryOutputPlugin('id_responsibilities')
                       , ForwardingGroupOutputPlugin('id_forwarding')
+                      , ForwardingHistoryOutputPlugin('id_forwarding')
                       ]
 
     program = DataProcessingProgram(flask_app,
