@@ -1,13 +1,16 @@
 module Page.Forwarding exposing (..)
 
 import Browser.Navigation as Nav
+import Chart as C
+import Chart.Attributes as CA
 import Date exposing (Date)
-import Html exposing (Html, div, h2, input, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, div, h2, input, option, select, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 import Http
 import Json.Decode as Decode exposing (Decoder, field, float, string)
 import Task
+import Time
 import Url.Builder as UrlBuilder
 
 
@@ -17,7 +20,10 @@ import Url.Builder as UrlBuilder
 
 type alias Model =
     { selectedDate : String
+    , selectedGroup : String
+    , groupsForSelection : List String
     , forwardingGroupCounts : List ForwardingGroupCount
+    , forwardingGroupCountHistory : Maybe ForwardingGroupCountHistory
     }
 
 
@@ -29,6 +35,19 @@ type alias ForwardingGroupCount =
     }
 
 
+type alias ForwardingGroupCountHistory =
+    { key : String
+    , counts : List CountsForTimestamp
+    }
+
+
+type alias CountsForTimestamp =
+    { timestamp : Float
+    , inbound : Float
+    , outbound : Float
+    }
+
+
 
 -- INIT
 
@@ -36,6 +55,9 @@ type alias ForwardingGroupCount =
 init : Nav.Key -> ( Model, Cmd Msg )
 init _ =
     ( { selectedDate = ""
+      , selectedGroup = ""
+      , groupsForSelection = []
+      , forwardingGroupCountHistory = Nothing
       , forwardingGroupCounts = []
       }
     , Task.perform GotInitialDate Date.today
@@ -48,7 +70,9 @@ init _ =
 
 type Msg
     = GotInitialDate Date
+    | ChangeSelectedGroup String
     | ChangeDate String
+    | GotForwardingCountHistory (Result Http.Error ForwardingGroupCountHistory)
     | GotForwardingCounts (Result Http.Error (List ForwardingGroupCount))
 
 
@@ -62,8 +86,19 @@ update msg model =
             in
             ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
 
+        ChangeSelectedGroup newGroup ->
+            ( { model | selectedGroup = newGroup }, getGroupCountHistory newGroup )
+
         ChangeDate newDate ->
             ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
+
+        GotForwardingCountHistory result ->
+            case result of
+                Err _ ->
+                    ( { model | forwardingGroupCountHistory = Nothing }, Cmd.none )
+
+                Ok groupHistory ->
+                    ( { model | forwardingGroupCountHistory = Just groupHistory }, Cmd.none )
 
         GotForwardingCounts result ->
             case result of
@@ -71,7 +106,11 @@ update msg model =
                     ( { model | forwardingGroupCounts = [] }, Cmd.none )
 
                 Ok groupCounts ->
-                    ( { model | forwardingGroupCounts = groupCounts }, Cmd.none )
+                    let
+                        groupKeys =
+                            List.map .key groupCounts
+                    in
+                    ( { model | forwardingGroupCounts = groupCounts, groupsForSelection = groupKeys }, Cmd.none )
 
 
 
@@ -82,6 +121,13 @@ view : Model -> Html Msg
 view model =
     div []
         [ h2 [] [ text "Forwarding" ]
+        , viewHistoryGroupInput model.selectedGroup model.groupsForSelection
+        , case model.forwardingGroupCountHistory of
+            Just history ->
+                viewForwardingCountsHistoryChart history
+
+            Nothing ->
+                text "No group selected"
         , viewDateInput model.selectedDate
         , viewForwardingCountsTable model.forwardingGroupCounts
         ]
@@ -118,8 +164,67 @@ viewForwardingCountsTable counts =
         ]
 
 
+viewHistoryGroupInput : String -> List String -> Html Msg
+viewHistoryGroupInput currentlySelectedGroup groupsForSelection =
+    let
+        options =
+            List.map (\group -> option [ value group ] [ text group ]) groupsForSelection
+    in
+    div []
+        [ select [ onInput ChangeSelectedGroup, value currentlySelectedGroup ]
+            options
+        ]
+
+
+viewForwardingCountsHistoryChart : ForwardingGroupCountHistory -> Html Msg
+viewForwardingCountsHistoryChart { key, counts } =
+    div [ class "line-chart" ]
+        [ text key
+        , C.chart
+            [ CA.height 300
+            , CA.width 600
+            ]
+            [ C.xLabels [ CA.withGrid, CA.format timestampToDateString ]
+            , C.yLabels [ CA.withGrid ]
+            , C.series .timestamp
+                [ C.interpolated .inbound [ CA.monotone ] []
+                    |> C.named "Eingehend"
+                , C.interpolated .outbound [ CA.monotone ] []
+                    |> C.named "Ausgehend"
+                ]
+                counts
+            , C.legendsAt .max
+                .max
+                [ CA.column
+                , CA.moveRight 15
+                , CA.spacing 5
+                ]
+                [ CA.width 20 ]
+            ]
+        ]
+
+
+timestampToDateString : Float -> String
+timestampToDateString timestamp =
+    round (1000 * timestamp)
+        |> Time.millisToPosix
+        |> Date.fromPosix Time.utc
+        |> Date.toIsoString
+
+
 
 -- LOGIC
+
+
+getGroupCountHistory : String -> Cmd Msg
+getGroupCountHistory groupKey =
+    Http.get
+        { url =
+            UrlBuilder.crossOrigin "http://localhost:5000/forwarding"
+                [ groupKey, "history" ]
+                [ UrlBuilder.string "past-days" (String.fromInt 14) ]
+        , expect = Http.expectJson GotForwardingCountHistory forwardingGroupCountHistoryDecoder
+        }
 
 
 getAllForwardingCounts : String -> Cmd Msg
@@ -149,3 +254,23 @@ forwardingGroupCountDecoder =
         (field "label" string)
         (field "inboundCount" float)
         (field "outboundCount" float)
+
+
+forwardingGroupCountHistoryDecoder : Decoder ForwardingGroupCountHistory
+forwardingGroupCountHistoryDecoder =
+    Decode.map2 ForwardingGroupCountHistory
+        (field "groupLabel" string)
+        (field "countHistory" countsForTimestampListDecoder)
+
+
+countsForTimestampListDecoder : Decoder (List CountsForTimestamp)
+countsForTimestampListDecoder =
+    Decode.list countsForTimestampDecoder
+
+
+countsForTimestampDecoder : Decoder CountsForTimestamp
+countsForTimestampDecoder =
+    Decode.map3 CountsForTimestamp
+        (field "countDate" float)
+        (field "inbound" float)
+        (field "outbound" float)
