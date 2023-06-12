@@ -1,19 +1,19 @@
 from flask import Flask
 from flask_cors import CORS
 
-from business_logic.data_processing_program import DataProcessingProgram
+from src.business_logic.data_processing_program import DataProcessingProgram
 
-#from plugins.input.test_data_input_plugin import TestDataInputPlugin as InputPlugin
-from plugins.input.processed_tasks_input_plugin import ProcessedTasksInputPlugin as InputPlugin
+#from src.plugins.input.test_data_input_plugin import TestDataInputPlugin as InputPlugin
+from src.plugins.input.processed_tasks_input_plugin import ProcessedTasksInputPlugin as InputPlugin
 
-from plugins.transform.responsibilities_transform_plugin import ResponsibilitiesTransformPlugin
-from plugins.transform.forwarding_transform_plugin import ForwardingTransformPlugin
-from plugins.output.processed_task_to_csv_output_plugin import ProcessedTaskToCsvOutputPlugin
+from src.plugins.transform.responsibilities_transform_plugin import ResponsibilitiesTransformPlugin
+from src.plugins.transform.forwarding_transform_plugin import ForwardingTransformPlugin
+from src.plugins.output.processed_task_to_csv_output_plugin import ProcessedTaskToCsvOutputPlugin
 
-from plugins.output.responsibility_group_output_plugin import ResponsibilityGroupOutputPlugin
-from plugins.output.responsibility_history_output_plugin import ResponsibilityHistoryOutputPlugin
-from plugins.output.forwarding_group_output_plugin import ForwardingGroupOutputPlugin
-from plugins.output.forwarding_history_output_plugin import ForwardingHistoryOutputPlugin
+from src.plugins.output.responsibility_group_output_plugin import ResponsibilityGroupOutputPlugin
+from src.plugins.output.responsibility_history_output_plugin import ResponsibilityHistoryOutputPlugin
+from src.plugins.output.forwarding_group_output_plugin import ForwardingGroupOutputPlugin
+from src.plugins.output.forwarding_history_output_plugin import ForwardingHistoryOutputPlugin
 
 
 
