@@ -23,7 +23,21 @@ body {
 }
 
 
+/*
+ * START: Forwarding styles
+ */
+.forwarding .group-histories {
+    display: flex;
+    flex-wrap: wrap;
+}
 
+.forwarding .line-chart {
+    padding-right: 140px
+}
+
+/*
+ * END: Forwarding styles
+ */
 
 /*
  * START: Table styles
@@ -63,3 +77,7 @@ body {
 .labeled-count-table__cell--number {
     text-align: right;
 }
+
+/*
+ * END: Table styles
+ */

@@ -20,8 +20,8 @@ import Url.Builder as UrlBuilder
 
 type alias Model =
     { selectedDate : String
-    , selectedGroup : String
     , pastDays : String
+    , groupHistories : List GroupHistory
     , groupsForSelection : List String
     , forwardingGroupCounts : List ForwardingGroupCount
     , forwardingGroupCountHistory : Maybe ForwardingGroupCountHistory
@@ -33,6 +33,12 @@ type alias ForwardingGroupCount =
     , label : String
     , inboundCount : Float
     , outboundCount : Float
+    }
+
+
+type alias GroupHistory =
+    { selectedKey : String
+    , history : Maybe ForwardingGroupCountHistory
     }
 
 
@@ -56,8 +62,8 @@ type alias CountsForTimestamp =
 init : Nav.Key -> ( Model, Cmd Msg )
 init _ =
     ( { selectedDate = ""
-      , selectedGroup = ""
       , pastDays = "14"
+      , groupHistories = [ { selectedKey = "", history = Nothing }, { selectedKey = "", history = Nothing } ]
       , groupsForSelection = []
       , forwardingGroupCountHistory = Nothing
       , forwardingGroupCounts = []
@@ -72,7 +78,7 @@ init _ =
 
 type Msg
     = GotInitialDate Date
-    | ChangeSelectedGroup String
+    | ChangeSelectedGroup Int String
     | ChangePastDays String
     | ChangeDate String
     | GotForwardingCountHistory (Result Http.Error ForwardingGroupCountHistory)
@@ -89,11 +95,29 @@ update msg model =
             in
             ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
 
-        ChangeSelectedGroup newGroup ->
-            ( { model | selectedGroup = newGroup }, getGroupCountHistory model.pastDays newGroup )
+        ChangeSelectedGroup groupIndex newGroup ->
+            let
+                newGroupHistories =
+                    List.indexedMap
+                        (\index groupHistory ->
+                            if index == groupIndex then
+                                { groupHistory | selectedKey = newGroup }
+
+                            else
+                                groupHistory
+                        )
+                        model.groupHistories
+            in
+            ( { model | groupHistories = newGroupHistories }, getGroupCountHistory model.pastDays newGroup )
 
         ChangePastDays newPastDays ->
-            ( { model | pastDays = newPastDays }, getGroupCountHistory newPastDays model.selectedGroup )
+            let
+                historyRequests =
+                    List.map .selectedKey model.groupHistories
+                        |> List.filter (\key -> key /= "")
+                        |> List.map (getGroupCountHistory newPastDays)
+            in
+            ( { model | pastDays = newPastDays }, Cmd.batch historyRequests )
 
         ChangeDate newDate ->
             ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
@@ -103,8 +127,20 @@ update msg model =
                 Err _ ->
                     ( { model | forwardingGroupCountHistory = Nothing }, Cmd.none )
 
-                Ok groupHistory ->
-                    ( { model | forwardingGroupCountHistory = Just groupHistory }, Cmd.none )
+                Ok newGroupHistory ->
+                    let
+                        newGroupHistories =
+                            List.map
+                                (\groupHistory ->
+                                    if groupHistory.selectedKey == newGroupHistory.key then
+                                        { groupHistory | history = Just newGroupHistory }
+
+                                    else
+                                        groupHistory
+                                )
+                                model.groupHistories
+                    in
+                    ( { model | groupHistories = newGroupHistories }, Cmd.none )
 
         GotForwardingCounts result ->
             case result of
@@ -125,15 +161,10 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
+    div [ class "forwarding" ]
         [ h2 [] [ text "Forwarding" ]
-        , viewHistoryGroupInput model
-        , case model.forwardingGroupCountHistory of
-            Just history ->
-                viewForwardingCountsHistoryChart history
-
-            Nothing ->
-                text "No group selected"
+        , viewPastDaysInput model.pastDays
+        , viewGroupHistories model
         , viewDateInput model.selectedDate
         , viewForwardingCountsTable model.forwardingGroupCounts
         ]
@@ -170,16 +201,37 @@ viewForwardingCountsTable counts =
         ]
 
 
-viewHistoryGroupInput : Model -> Html Msg
-viewHistoryGroupInput model =
+viewGroupHistories : Model -> Html Msg
+viewGroupHistories model =
+    let
+        histories =
+            List.indexedMap (viewGroupHistory model.groupsForSelection) model.groupHistories
+    in
+    div [ class "group-histories" ] histories
+
+
+viewGroupHistory : List String -> Int -> GroupHistory -> Html Msg
+viewGroupHistory groupsForSelection groupIndex groupHistory =
+    div [ class "group-history" ]
+        [ viewHistoryGroupInput groupIndex groupHistory.selectedKey groupsForSelection
+        , case groupHistory.history of
+            Just history ->
+                viewForwardingCountsHistoryChart history
+
+            Nothing ->
+                text "No group selected"
+        ]
+
+
+viewHistoryGroupInput : Int -> String -> List String -> Html Msg
+viewHistoryGroupInput inputIndex selectedGroup groupsForSelection =
     let
         options =
-            List.map (\group -> option [ value group ] [ text group ]) model.groupsForSelection
+            List.map (\group -> option [ value group ] [ text group ]) groupsForSelection
     in
     div []
-        [ select [ onInput ChangeSelectedGroup, value model.selectedGroup ]
+        [ select [ onInput (ChangeSelectedGroup inputIndex), value selectedGroup ]
             options
-        , viewPastDaysInput model.pastDays
         ]
 
 
