@@ -36,7 +36,7 @@ type alias LabeledCount =
 
 
 type alias HistoryModel =
-    { pastDays : Int
+    { pastDays : String
     , selectedGroups : List String
     , historySelection : ResponsibilityHistorySelection
     }
@@ -85,7 +85,7 @@ init _ =
       , selectedGroup = ""
       , groupsForSelection = []
       , history =
-            { pastDays = 14
+            { pastDays = "14"
             , selectedGroups = []
             , historySelection = NoGroupSelected
             }
@@ -103,6 +103,7 @@ type Msg
     = GotInitialDate Date.Date
     | ChangeDate String
     | ChangeGroupSelection String
+    | ChangePastDays String
     | ConfirmGroupSelection
     | GotResponsibilityGroupCount (Result Http.Error (List LabeledCount))
     | GotGroupCountHistory (Result Http.Error ( Dict String String, ResponsibilityHistoryData ))
@@ -131,6 +132,17 @@ update msg model =
                 }
             )
 
+        ChangePastDays newPastDays ->
+            let
+                history =
+                    model.history
+            in
+            ( { model
+                | history = { history | pastDays = newPastDays }
+              }
+            , getHistoryData newPastDays history.selectedGroups
+            )
+
         ChangeGroupSelection newGroup ->
             ( { model | selectedGroup = newGroup }, Cmd.none )
 
@@ -147,7 +159,7 @@ update msg model =
                     | selectedGroup = ""
                     , history = { history | selectedGroups = newSelectedGroups }
                   }
-                , getHistoryData 14 newSelectedGroups
+                , getHistoryData history.pastDays newSelectedGroups
                 )
 
             else
@@ -198,7 +210,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ viewHistorySelect model.selectedGroup model.groupsForSelection
+        [ viewHistorySelect model.history.pastDays model.selectedGroup model.groupsForSelection
         , text (Debug.toString model.history.selectedGroups)
         , viewHistory model.history.historySelection
         , viewDateInput model.selectedDate
@@ -216,8 +228,8 @@ viewHistory data =
             div [] [ viewHistoryChart labels groupData ]
 
 
-viewHistorySelect : String -> List String -> Html Msg
-viewHistorySelect currentlySelectedGroup groupsForSelection =
+viewHistorySelect : String -> String -> List String -> Html Msg
+viewHistorySelect pastDays currentlySelectedGroup groupsForSelection =
     let
         options =
             option [ value "" ] [ text "-" ]
@@ -226,12 +238,8 @@ viewHistorySelect currentlySelectedGroup groupsForSelection =
     div []
         [ select [ onInput ChangeGroupSelection, value currentlySelectedGroup ]
             options
-
-        -- [ option [ value "" ] [ text "-" ]
-        -- , option [ value "Group1" ] [ text "Gruppe 1" ]
-        -- , option [ value "Group2" ] [ text "Gruppe 2" ]
-        -- ]
         , button [ type_ "button", onClick ConfirmGroupSelection ] [ text "Ok" ]
+        , viewPastDaysInput pastDays
         , text currentlySelectedGroup
         ]
 
@@ -349,6 +357,11 @@ fiveGroupsSeries labels groupData =
         groupData
 
 
+viewPastDaysInput : String -> Html Msg
+viewPastDaysInput pastDays =
+    input [ type_ "text", onInput ChangePastDays, value pastDays ] []
+
+
 viewDateInput : String -> Html Msg
 viewDateInput dateString =
     input [ type_ "date", onInput ChangeDate, value dateString ] []
@@ -384,13 +397,13 @@ viewResponsibilitiesCountTable labeledCounts =
 -- LOGIC
 
 
-getHistoryData : Int -> List String -> Cmd Msg
+getHistoryData : String -> List String -> Cmd Msg
 getHistoryData pastDays selectedGroups =
     Http.get
         { url =
             UrlBuilder.crossOrigin "http://localhost:5000/responsibility-groups"
                 [ "history" ]
-                [ UrlBuilder.string "past-days" (String.fromInt pastDays), UrlBuilder.string "group-keys" (String.join "," selectedGroups) ]
+                [ UrlBuilder.string "past-days" pastDays, UrlBuilder.string "group-keys" (String.join "," selectedGroups) ]
         , expect = Http.expectJson GotGroupCountHistory (responsibilityGroupCountHistoryDecoder (List.length selectedGroups))
         }
 

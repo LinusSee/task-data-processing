@@ -21,6 +21,7 @@ import Url.Builder as UrlBuilder
 type alias Model =
     { selectedDate : String
     , selectedGroup : String
+    , pastDays : String
     , groupsForSelection : List String
     , forwardingGroupCounts : List ForwardingGroupCount
     , forwardingGroupCountHistory : Maybe ForwardingGroupCountHistory
@@ -56,6 +57,7 @@ init : Nav.Key -> ( Model, Cmd Msg )
 init _ =
     ( { selectedDate = ""
       , selectedGroup = ""
+      , pastDays = "14"
       , groupsForSelection = []
       , forwardingGroupCountHistory = Nothing
       , forwardingGroupCounts = []
@@ -71,6 +73,7 @@ init _ =
 type Msg
     = GotInitialDate Date
     | ChangeSelectedGroup String
+    | ChangePastDays String
     | ChangeDate String
     | GotForwardingCountHistory (Result Http.Error ForwardingGroupCountHistory)
     | GotForwardingCounts (Result Http.Error (List ForwardingGroupCount))
@@ -87,7 +90,10 @@ update msg model =
             ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
 
         ChangeSelectedGroup newGroup ->
-            ( { model | selectedGroup = newGroup }, getGroupCountHistory newGroup )
+            ( { model | selectedGroup = newGroup }, getGroupCountHistory model.pastDays newGroup )
+
+        ChangePastDays newPastDays ->
+            ( { model | pastDays = newPastDays }, getGroupCountHistory newPastDays model.selectedGroup )
 
         ChangeDate newDate ->
             ( { model | selectedDate = newDate }, getAllForwardingCounts newDate )
@@ -121,7 +127,7 @@ view : Model -> Html Msg
 view model =
     div []
         [ h2 [] [ text "Forwarding" ]
-        , viewHistoryGroupInput model.selectedGroup model.groupsForSelection
+        , viewHistoryGroupInput model
         , case model.forwardingGroupCountHistory of
             Just history ->
                 viewForwardingCountsHistoryChart history
@@ -164,16 +170,22 @@ viewForwardingCountsTable counts =
         ]
 
 
-viewHistoryGroupInput : String -> List String -> Html Msg
-viewHistoryGroupInput currentlySelectedGroup groupsForSelection =
+viewHistoryGroupInput : Model -> Html Msg
+viewHistoryGroupInput model =
     let
         options =
-            List.map (\group -> option [ value group ] [ text group ]) groupsForSelection
+            List.map (\group -> option [ value group ] [ text group ]) model.groupsForSelection
     in
     div []
-        [ select [ onInput ChangeSelectedGroup, value currentlySelectedGroup ]
+        [ select [ onInput ChangeSelectedGroup, value model.selectedGroup ]
             options
+        , viewPastDaysInput model.pastDays
         ]
+
+
+viewPastDaysInput : String -> Html Msg
+viewPastDaysInput pastDays =
+    input [ type_ "number", onInput ChangePastDays, value pastDays ] []
 
 
 viewForwardingCountsHistoryChart : ForwardingGroupCountHistory -> Html Msg
@@ -216,13 +228,13 @@ timestampToDateString timestamp =
 -- LOGIC
 
 
-getGroupCountHistory : String -> Cmd Msg
-getGroupCountHistory groupKey =
+getGroupCountHistory : String -> String -> Cmd Msg
+getGroupCountHistory pastDays groupKey =
     Http.get
         { url =
             UrlBuilder.crossOrigin "http://localhost:5000/forwarding"
                 [ groupKey, "history" ]
-                [ UrlBuilder.string "past-days" (String.fromInt 14) ]
+                [ UrlBuilder.string "past-days" pastDays ]
         , expect = Http.expectJson GotForwardingCountHistory forwardingGroupCountHistoryDecoder
         }
 
